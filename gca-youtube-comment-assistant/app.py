@@ -1,5 +1,5 @@
 import streamlit as st
-from database import init_db, get_unhandled_comments, save_comment, mark_comment_status
+from database import init_db, get_unhandled_comments, save_comment, mark_comment_status, clear_new_comments
 from youtube_client import (
     get_auth_url,
     handle_oauth_callback,
@@ -34,13 +34,20 @@ with st.sidebar:
     max_results = st.slider("Comments to fetch", 5, 50, 25)
     st.success("YouTube connected")
 
+    st.divider()
+    st.caption("Use this once after changing filters if old comments are still showing.")
+    if st.button("Clear Unhandled Inbox"):
+        clear_new_comments()
+        st.success("Unhandled inbox cleared. Fetch latest comments again.")
+        st.rerun()
+
 if st.button("Fetch Latest Comments"):
     with st.spinner("Fetching YouTube comments..."):
         youtube = get_youtube_service()
         comments = fetch_recent_comments(youtube, max_results=max_results)
         for c in comments:
             save_comment(c)
-    st.success("Latest comments fetched.")
+    st.success("Latest comments fetched. Own comments and already-replied threads were skipped.")
 
 comments = get_unhandled_comments()
 
@@ -80,6 +87,7 @@ else:
                 )
                 mark_comment_status(comment["comment_id"], "posted")
                 st.success("Reply posted.")
+                st.rerun()
 
         with col2:
             if st.button("Generate Another", key=f"regen_{key_base}"):
