@@ -15,7 +15,7 @@ def get_client_config():
             "redirect_uris": [st.secrets["REDIRECT_URI"]],
         }
     }
-
+    
 def make_flow():
     flow = Flow.from_client_config(
         get_client_config(),
