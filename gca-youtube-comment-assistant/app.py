@@ -8,7 +8,7 @@ from youtube_client import (
     fetch_recent_comments,
     post_reply,
 )
-from ai_replies import generate_reply
+from ai_replies import generate_reply, get_google_sheet
 
 st.set_page_config(page_title="GCA YouTube Comment Assistant", layout="wide")
 
@@ -79,14 +79,32 @@ else:
 
         with col1:
             if st.button("Approve & Post", key=f"approve_{key_base}"):
+                final_reply = st.session_state[f"suggestion_{key_base}"]
+
                 youtube = get_youtube_service()
                 post_reply(
                     youtube=youtube,
                     parent_comment_id=comment["comment_id"],
-                    reply_text=st.session_state[f"suggestion_{key_base}"]
+                    reply_text=final_reply
                 )
+
+                try:
+                    sheet = get_google_sheet()
+                    worksheet = sheet.worksheet("Approved Responses")
+                    worksheet.append_row([
+                        comment["comment_id"],
+                        comment["video_title"] or "",
+                        comment["author"] or "",
+                        comment["text"] or "",
+                        final_reply,
+                        "YouTube",
+                        "posted"
+                    ])
+                except Exception as e:
+                    st.warning(f"Reply posted, but Google Sheet save failed: {e}")
+
                 mark_comment_status(comment["comment_id"], "posted")
-                st.success("Reply posted.")
+                st.success("Reply posted and saved to Google Sheet.")
                 st.rerun()
 
         with col2:
