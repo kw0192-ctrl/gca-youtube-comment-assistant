@@ -3,8 +3,10 @@ from pathlib import Path
 
 DB_PATH = Path("comments.db")
 
+
 def get_conn():
     return sqlite3.connect(DB_PATH)
+
 
 def init_db():
     conn = get_conn()
@@ -23,7 +25,14 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 def save_comment(comment):
+    """
+    Save a new comment only once.
+
+    Existing comments keep their current status, so comments marked posted,
+    skipped, or important will not be reset back to new.
+    """
     conn = get_conn()
     conn.execute("""
         INSERT OR IGNORE INTO comments (
@@ -41,6 +50,7 @@ def save_comment(comment):
     conn.commit()
     conn.close()
 
+
 def get_unhandled_comments():
     conn = get_conn()
     conn.row_factory = sqlite3.Row
@@ -53,11 +63,24 @@ def get_unhandled_comments():
     conn.close()
     return [dict(row) for row in rows]
 
+
 def mark_comment_status(comment_id, status):
     conn = get_conn()
     conn.execute(
         "UPDATE comments SET status = ? WHERE comment_id = ?",
         (status, comment_id)
     )
+    conn.commit()
+    conn.close()
+
+
+def clear_new_comments():
+    """
+    Optional cleanup helper.
+    Removes only unhandled comments so you can refresh the inbox after filters change.
+    It does not remove posted, skipped, or important history.
+    """
+    conn = get_conn()
+    conn.execute("DELETE FROM comments WHERE status = 'new'")
     conn.commit()
     conn.close()
