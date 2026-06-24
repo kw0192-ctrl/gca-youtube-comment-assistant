@@ -243,7 +243,7 @@ def get_google_sheet():
     )
 
     client = gspread.authorize(creds)
-   return client.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
+    return client.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
 
 def generate_reply(comment_text, video_title="", author="", previous_reply=None):
     api_key = st.secrets.get("OPENAI_API_KEY", "")
