@@ -64,10 +64,11 @@ else:
         st.write(comment["text"])
 
         key_base = comment["comment_id"]
+
         suggestion_key = f"suggestion_{key_base}"
-        reply_box_key = f"reply_box_{key_base}"
-        change_key = f"change_request_{key_base}"
         original_ai_key = f"original_ai_draft_{key_base}"
+        change_key = f"change_request_{key_base}"
+        version_key = f"reply_version_{key_base}"
 
         if suggestion_key not in st.session_state:
             first_reply = generate_reply(
@@ -76,11 +77,14 @@ else:
                 author=comment["author"] or ""
             )
             st.session_state[suggestion_key] = first_reply
-            st.session_state[reply_box_key] = first_reply
             st.session_state[original_ai_key] = first_reply
+            st.session_state[version_key] = 0
 
-        st.text_area(
+        reply_box_key = f"reply_box_{key_base}_{st.session_state[version_key]}"
+
+        reply_text = st.text_area(
             "Suggested reply",
+            value=st.session_state[suggestion_key],
             key=reply_box_key,
             height=120
         )
@@ -148,7 +152,7 @@ else:
                 )
 
                 st.session_state[suggestion_key] = updated_reply
-                st.session_state[reply_box_key] = updated_reply
+                st.session_state[version_key] += 1
                 st.rerun()
 
         with col3:
