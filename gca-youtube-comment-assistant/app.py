@@ -14,6 +14,8 @@ st.set_page_config(page_title="GCA YouTube Comment Assistant", layout="wide")
 
 init_db()
 
+SHEET_TAB_NAME = "Approved Responses"
+
 st.title("Green Country Adventures YouTube Comment Assistant")
 st.caption("Approval-only mode. Nothing posts unless you click Approve & Post.")
 
@@ -75,22 +77,36 @@ else:
             height=120
         )
 
+        change_request = st.text_area(
+            "Suggested changes / personal notes",
+            key=f"change_request_{key_base}",
+            height=80,
+            placeholder="Example: Mention that I personally like the stereo upgrade best, but the ladder is probably the most practical upgrade."
+        )
+
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             if st.button("Approve & Post", key=f"approve_{key_base}"):
                 final_reply = st.session_state[f"suggestion_{key_base}"]
 
-                youtube = get_youtube_service()
-                post_reply(
-                    youtube=youtube,
-                    parent_comment_id=comment["comment_id"],
-                    reply_text=final_reply
-                )
+                try:
+                    youtube = get_youtube_service()
+                    post_reply(
+                        youtube=youtube,
+                        parent_comment_id=comment["comment_id"],
+                        reply_text=final_reply
+                    )
+                    mark_comment_status(comment["comment_id"], "posted")
+                    st.success("Reply posted to YouTube.")
+                except Exception as e:
+                    st.error(f"YouTube post failed: {e}")
+                    st.stop()
 
                 try:
                     sheet = get_google_sheet()
-                    worksheet = sheet.worksheet("Approved Responses")
+                    worksheet = sheet.worksheet(SHEET_TAB_NAME)
+
                     worksheet.append_row([
                         comment["comment_id"],
                         comment["video_title"] or "",
@@ -98,21 +114,16 @@ else:
                         comment["text"] or "",
                         final_reply,
                         "YouTube",
-                        "posted"
+                        "Posted",
+                        change_request or "",
                     ])
+
+                    st.success("Saved to Google Sheet.")
                 except Exception as e:
-                    st.warning(f"Reply posted, but Google Sheet save failed: {e}")
+                    st.error(f"Google Sheet save failed: {e}")
+                    st.stop()
 
-                mark_comment_status(comment["comment_id"], "posted")
-                st.success("Reply posted and saved to Google Sheet.")
-                st.rerun()
-
-        change_request = st.text_area(
-            "Suggested changes / personal notes",
-            key=f"change_request_{key_base}",
-            height=80,
-            placeholder="Example: Mention that I personally like the stereo upgrade best, but the ladder is probably the most practical upgrade."
-        )
+                st.stop()
 
         with col2:
             if st.button("Generate Updated Reply", key=f"regen_{key_base}"):
