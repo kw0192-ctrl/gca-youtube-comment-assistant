@@ -107,13 +107,24 @@ else:
                 st.success("Reply posted and saved to Google Sheet.")
                 st.rerun()
 
+        change_request = st.text_area(
+            "Suggested changes / personal notes",
+            key=f"change_request_{key_base}",
+            height=80,
+            placeholder="Example: Mention that I personally like the stereo upgrade best, but the ladder is probably the most practical upgrade."
+        )
+
         with col2:
-            if st.button("Generate Another", key=f"regen_{key_base}"):
+            if st.button("Generate Updated Reply", key=f"regen_{key_base}"):
                 st.session_state[f"suggestion_{key_base}"] = generate_reply(
                     comment_text=comment["text"],
                     video_title=comment["video_title"] or "",
                     author=comment["author"] or "",
-                    previous_reply=st.session_state[f"suggestion_{key_base}"]
+                    previous_reply=(
+                        st.session_state[f"suggestion_{key_base}"]
+                        + "\n\nKevin's requested changes:\n"
+                        + change_request
+                    )
                 )
                 st.rerun()
 
