@@ -72,11 +72,14 @@ else:
                 author=comment["author"] or ""
             )
 
-        st.text_area(
+        reply_text = st.text_area(
             "Suggested reply",
-            key=f"suggestion_{key_base}",
+            value=st.session_state[f"suggestion_{key_base}"],
+            key=f"reply_box_{key_base}",
             height=120
         )
+
+        st.session_state[f"final_reply_{key_base}"] = reply_text
 
         change_request = st.text_area(
             "Suggested changes / personal notes",
@@ -89,7 +92,7 @@ else:
 
         with col1:
             if st.button("Approve & Post", key=f"approve_{key_base}"):
-                final_reply = st.session_state[f"suggestion_{key_base}"]
+                final_reply = st.session_state[f"final_reply_{key_base}"] 
 
                 try:
                     youtube = get_youtube_service()
