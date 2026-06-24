@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 from database import init_db, get_unhandled_comments, save_comment, mark_comment_status, clear_new_comments
 from youtube_client import (
     get_auth_url,
@@ -14,7 +15,7 @@ st.set_page_config(page_title="GCA YouTube Comment Assistant", layout="wide")
 
 init_db()
 
-SHEET_TAB_NAME = "Approved Responses"
+SHEET_TAB_NAME = "AI Training Data"
 
 st.title("Green Country Adventures YouTube Comment Assistant")
 st.caption("Approval-only mode. Nothing posts unless you click Approve & Post.")
@@ -108,14 +109,15 @@ else:
                     worksheet = sheet.worksheet(SHEET_TAB_NAME)
 
                     worksheet.append_row([
-                        comment["comment_id"],
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "YouTube",
                         comment["video_title"] or "",
                         comment["author"] or "",
                         comment["text"] or "",
-                        final_reply,
-                        "YouTube",
-                        "Posted",
+                        "",  # AI Draft
                         change_request or "",
+                        final_reply,
+                        "Posted",
                     ])
 
                     st.success("Saved to Google Sheet.")
