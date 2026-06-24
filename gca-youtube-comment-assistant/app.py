@@ -64,26 +64,30 @@ else:
         st.write(comment["text"])
 
         key_base = comment["comment_id"]
+        suggestion_key = f"suggestion_{key_base}"
+        reply_box_key = f"reply_box_{key_base}"
+        change_key = f"change_request_{key_base}"
+        original_ai_key = f"original_ai_draft_{key_base}"
 
-        if f"suggestion_{key_base}" not in st.session_state:
-            st.session_state[f"suggestion_{key_base}"] = generate_reply(
+        if suggestion_key not in st.session_state:
+            first_reply = generate_reply(
                 comment_text=comment["text"],
                 video_title=comment["video_title"] or "",
                 author=comment["author"] or ""
             )
+            st.session_state[suggestion_key] = first_reply
+            st.session_state[reply_box_key] = first_reply
+            st.session_state[original_ai_key] = first_reply
 
-        reply_text = st.text_area(
+        st.text_area(
             "Suggested reply",
-            value=st.session_state[f"suggestion_{key_base}"],
-            key=f"reply_box_{key_base}",
+            key=reply_box_key,
             height=120
         )
 
-        st.session_state[f"final_reply_{key_base}"] = reply_text
-
         change_request = st.text_area(
             "Suggested changes / personal notes",
-            key=f"change_request_{key_base}",
+            key=change_key,
             height=80,
             placeholder="Example: Mention that I personally like the stereo upgrade best, but the ladder is probably the most practical upgrade."
         )
@@ -92,7 +96,7 @@ else:
 
         with col1:
             if st.button("Approve & Post", key=f"approve_{key_base}"):
-                final_reply = st.session_state[f"final_reply_{key_base}"] 
+                final_reply = st.session_state[reply_box_key]
 
                 try:
                     youtube = get_youtube_service()
@@ -117,8 +121,8 @@ else:
                         comment["video_title"] or "",
                         comment["author"] or "",
                         comment["text"] or "",
-                        "",  # AI Draft
-                        change_request or "",
+                        st.session_state.get(original_ai_key, ""),
+                        st.session_state.get(change_key, ""),
                         final_reply,
                         "Posted",
                     ])
@@ -132,16 +136,19 @@ else:
 
         with col2:
             if st.button("Generate Updated Reply", key=f"regen_{key_base}"):
-                st.session_state[f"suggestion_{key_base}"] = generate_reply(
+                updated_reply = generate_reply(
                     comment_text=comment["text"],
                     video_title=comment["video_title"] or "",
                     author=comment["author"] or "",
                     previous_reply=(
-                        st.session_state[f"suggestion_{key_base}"]
+                        st.session_state[reply_box_key]
                         + "\n\nKevin's requested changes:\n"
-                        + change_request
+                        + st.session_state.get(change_key, "")
                     )
                 )
+
+                st.session_state[suggestion_key] = updated_reply
+                st.session_state[reply_box_key] = updated_reply
                 st.rerun()
 
         with col3:
