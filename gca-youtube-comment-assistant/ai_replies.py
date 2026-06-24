@@ -1,5 +1,7 @@
 import streamlit as st
 from openai import OpenAI
+import gspread
+from google.oauth2.service_account import Credentials
 
 SYSTEM_PROMPT = """
 ##
@@ -228,6 +230,20 @@ The comment should never feel like an advertisement.
 Helpful first. Links second.
 
 """
+
+def get_google_sheet():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scopes
+    )
+
+    client = gspread.authorize(creds)
+   return client.open_by_key(st.secrets["1by_qqQqkyHP6vHbnWkY_aFdosPNB6Nutt6tcdkNy2X4"])
 
 def generate_reply(comment_text, video_title="", author="", previous_reply=None):
     api_key = st.secrets.get("OPENAI_API_KEY", "")
