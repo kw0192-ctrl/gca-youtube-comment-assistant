@@ -1,0 +1,102 @@
+import streamlit as st
+from database import init_db, get_unhandled_comments, save_comment, mark_comment_status
+from youtube_client import (
+    get_auth_url,
+    handle_oauth_callback,
+    is_logged_in,
+    get_youtube_service,
+    fetch_recent_comments,
+    post_reply,
+)
+from ai_replies import generate_reply
+
+st.set_page_config(page_title="GCA YouTube Comment Assistant", layout="wide")
+
+init_db()
+
+st.title("Green Country Adventures YouTube Comment Assistant")
+st.caption("Approval-only mode. Nothing posts unless you click Approve & Post.")
+
+if "code" in st.query_params:
+    if handle_oauth_callback():
+        st.success("YouTube connected successfully.")
+
+if not is_logged_in():
+    st.warning("YouTube is not connected yet.")
+    try:
+        st.link_button("Connect YouTube", get_auth_url())
+    except Exception as e:
+        st.error(f"OAuth setup is incomplete: {e}")
+    st.stop()
+
+with st.sidebar:
+    st.header("Controls")
+    max_results = st.slider("Comments to fetch", 5, 50, 25)
+    st.success("YouTube connected")
+
+if st.button("Fetch Latest Comments"):
+    with st.spinner("Fetching YouTube comments..."):
+        youtube = get_youtube_service()
+        comments = fetch_recent_comments(youtube, max_results=max_results)
+        for c in comments:
+            save_comment(c)
+    st.success("Latest comments fetched.")
+
+comments = get_unhandled_comments()
+
+if not comments:
+    st.info("No unhandled comments yet. Click Fetch Latest Comments.")
+else:
+    for comment in comments:
+        st.divider()
+        st.subheader(comment["video_title"] or "YouTube Comment")
+        st.write(f'**Viewer:** {comment["author"]}')
+        st.write(comment["text"])
+
+        key_base = comment["comment_id"]
+
+        if f"suggestion_{key_base}" not in st.session_state:
+            st.session_state[f"suggestion_{key_base}"] = generate_reply(
+                comment_text=comment["text"],
+                video_title=comment["video_title"] or "",
+                author=comment["author"] or ""
+            )
+
+        st.text_area(
+            "Suggested reply",
+            key=f"suggestion_{key_base}",
+            height=120
+        )
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            if st.button("Approve & Post", key=f"approve_{key_base}"):
+                youtube = get_youtube_service()
+                post_reply(
+                    youtube=youtube,
+                    parent_comment_id=comment["comment_id"],
+                    reply_text=st.session_state[f"suggestion_{key_base}"]
+                )
+                mark_comment_status(comment["comment_id"], "posted")
+                st.success("Reply posted.")
+
+        with col2:
+            if st.button("Generate Another", key=f"regen_{key_base}"):
+                st.session_state[f"suggestion_{key_base}"] = generate_reply(
+                    comment_text=comment["text"],
+                    video_title=comment["video_title"] or "",
+                    author=comment["author"] or "",
+                    previous_reply=st.session_state[f"suggestion_{key_base}"]
+                )
+                st.rerun()
+
+        with col3:
+            if st.button("Skip", key=f"skip_{key_base}"):
+                mark_comment_status(comment["comment_id"], "skipped")
+                st.rerun()
+
+        with col4:
+            if st.button("Mark Important", key=f"important_{key_base}"):
+                mark_comment_status(comment["comment_id"], "important")
+                st.rerun()
