@@ -17,11 +17,13 @@ def get_client_config():
     }
 
 def make_flow():
-    return Flow.from_client_config(
+    flow = Flow.from_client_config(
         get_client_config(),
         scopes=SCOPES,
         redirect_uri=st.secrets["REDIRECT_URI"]
     )
+    flow.autogenerate_code_verifier = False
+    return flow
 
 def get_auth_url():
     flow = make_flow()
