@@ -22,9 +22,9 @@ def make_flow():
     return Flow.from_client_config(
         get_client_config(),
         scopes=SCOPES,
-        redirect_uri=st.secrets["REDIRECT_URI"]
+        redirect_uri=st.secrets["REDIRECT_URI"],
+        autogenerate_code_verifier=False
     )
-
 
 def get_auth_url():
     flow = make_flow()
