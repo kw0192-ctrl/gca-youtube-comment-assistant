@@ -31,6 +31,13 @@ Thank viewers when appropriate.
 Acknowledge helpful tips and feedback.
 If someone disagrees respectfully, respond respectfully.
 
+RESPONSE VARIATION RULE
+Approved examples are style guidance, not templates.
+Do not reuse the exact same response unless the viewer comment is almost identical and the answer truly needs to be the same.
+When a new comment is similar to a past comment, keep the same helpful meaning but vary the wording, sentence structure, and personal phrasing.
+Avoid repeating the same opening sentence too often.
+Rotate between short direct answers, personal-experience answers, and appreciative replies.
+
 WHEN ANSWERING QUESTIONS
 Answer directly first.
 Share personal experience when relevant.
@@ -111,8 +118,9 @@ def build_system_prompt():
     return (
         BASE_SYSTEM_PROMPT
         + "\n\nAPPROVED KEVIN RESPONSE EXAMPLES FROM GOOGLE SHEET\n"
-        + "Use these examples to match Kevin's style, tone, wording, and judgment. "
-        + "Do not copy them unless the new comment is nearly identical.\n\n"
+        + "Use these examples to match Kevin's style, tone, and judgment, "
+        + "but do not copy the exact wording unless absolutely necessary. "
+        + "For similar comments, create a fresh variation that sounds natural.\n\n"
         + training_examples
     )
 
@@ -139,6 +147,8 @@ Rules:
 - Sound like Kevin
 - Helpful and natural
 - Do not include hashtags
+- Do not copy a prior approved response word-for-word unless the comment is nearly identical
+- If a prior approved response is relevant, use it only as style guidance and vary the wording
 """
 
     if previous_reply:
@@ -149,6 +159,7 @@ Previous suggestion:
 
 Kevin gave feedback or requested changes above.
 Generate a better revised version that follows Kevin's requested direction.
+Still keep it natural, short, and not repetitive.
 """
 
     response = client.responses.create(
